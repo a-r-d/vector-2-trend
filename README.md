@@ -2,6 +2,10 @@
 
 Take (text) vectors and get out trending topics using clustering algorithms.
 
+```
+npm i vector-2-trend
+```
+
 Good use cases:
 
 - surfacing topics in user feedback
