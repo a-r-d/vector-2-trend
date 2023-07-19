@@ -101,14 +101,24 @@ export const classifyClusters = async (
   /**
    * Assume these are sorted descending by score
    */
-  // Only get the top 6 groups
+  // Only get the top n groups
   const topnGroups = args.clusteringResult.rankings.slice(0, nTopics);
+
+  // this is here for sanity so you don't burn a TON of tokens
+  const maxElementsPerGroup = args.elementsPerGroup ?? 10;
+
+  const topNGroupsTruncatedMembers = topnGroups.map((group) => {
+    return {
+      ...group,
+      records: group.records.slice(0, maxElementsPerGroup),
+    };
+  });
 
   const prompt = `You will be asked to summarize the topics of the following groups text. Please provide a short name for each of groups between 1-6 words based on the content.
   You must return a single JSON formatted list of strings (Array<string>) with the same length as the number of groups. There are ${
-    topnGroups.length
+    topNGroupsTruncatedMembers.length
   } groups.
-  ${topnGroups
+  ${topNGroupsTruncatedMembers
     .map((cluster, i) => {
       return `Group ${i + 1}:
   ${cluster.records
@@ -122,7 +132,7 @@ export const classifyClusters = async (
   const completion = await callCompletion({
     apiKey: args.openAiApiKey,
     promptText: prompt,
-    temperature: 0.1,
+    temperature: args.temperature ?? 0.1,
   });
   const resultClassification = cleanClassification<string[]>(completion);
 
@@ -160,9 +170,9 @@ export class Vector2Trend {
     /**
      * Do PCA to reduce dimensionality
      */
-    const pca = new PCA(originalDatapoints.map((row) => row.records));
+    const pca = new PCA(originalDatapoints.map((row) => row.vector));
     const reducedDimensions = pca.predict(
-      originalDatapoints.map((row) => row.records),
+      originalDatapoints.map((row) => row.vector),
       {
         // You cannot have more components and the number of the records
         nComponents: args.pcaDimensions,
@@ -174,12 +184,12 @@ export class Vector2Trend {
       dataPointsReduced.push({
         id: originalDatapoints[i].id,
         text: originalDatapoints[i].text,
-        records: reducedDimensions.getRow(i),
+        vector: reducedDimensions.getRow(i),
       });
     }
 
     // Convert embeddings back into a list format
-    const embeddings = dataPointsReduced.map((row) => row.records);
+    const embeddings = dataPointsReduced.map((row) => row.vector);
 
     // Decide on the number of clusters (you may need to adjust this)
     // this algo feels about correct
@@ -193,7 +203,7 @@ export class Vector2Trend {
     });
 
     const silhouetteScores = silhouetteScore(
-      dataPointsReduced.map((x) => x.records),
+      dataPointsReduced.map((x) => x.vector),
       kmeansResult.clusters,
     );
 

@@ -1,7 +1,7 @@
 export interface DataPoint {
   id: number | string;
   text: string;
-  records: number[];
+  vector: number[];
 }
 
 export type ClusteringArgument = {
@@ -29,7 +29,9 @@ export type ClassificationRequest = {
   clusteringResult: ClusteringResult;
   openAiApiKey: string;
 
-  nTopics?: number // defaults to 10
+  nTopics?: number; // defaults to 10
+  elementsPerGroup?: number; // defaults to 10
+  temperature?: number; // defaults to 0.1
 };
 
 export type ClassifiedClusterResponse = {

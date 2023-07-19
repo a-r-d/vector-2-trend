@@ -2,6 +2,11 @@
 
 Take (text) vectors and get out trending topics using clustering algorithms.
 
+Good use cases:
+
+- surfacing topics in user feedback
+- categorizing survey responses
+
 ![example text topic trends](docs/screenshots/example-user-feedback-trends.png)
 
 ## Summary
@@ -50,10 +55,14 @@ type ClusteringArgument = {
 
 const clusteringResult: ClusteringResult = Vector2Trend.cluster({
   vectors: vectors,
-  // any number, but make sure they are uniform
+  // Dimensionality of the vectors - any number, but make sure they are uniform
+  // 1536 is the dimensionality of the text-embedding-ada-002 model by openAI 
+  // which is cheap and performant (3k pages per dollar in 2023)
   n: 1536,
   // tune this based on your own data
-  // if you make this the same number as N PCA will be skipped
+  // if you make this the same number as N PCA will essentially be skipped
+  // but with high dimensional data I would recommend a number that is reasonable
+  // for performance considerations.
   pcaDimensions: 10,
   // algorithm
   clusteringAlgorithm: 'kmeans',
@@ -69,14 +78,75 @@ const classificationResult: ClassifiedClusterResponse[] = Vector2Trend.classify(
   {
     openAiApiKey: string,
     clusteringResult: ClusteringResult,
+    nTopics: 10, // optional, defaults to 10. How many topics to try to categorize in GPT.
+    temperature: 0.1, // optional, defaults to 0.1
+    elementsPerGroup: 10, // optional defaults to 10 in case you have very large clusters & hit token limit
   },
 );
 ```
 
-### Logging
+### Using the results:
+
+```typescript
+
+// the type returned
+export type ClassifiedClusterResponse = {
+  // this is the density score
+  score: number;
+
+  // these are the same as from the cluster ranking result
+  clusterId: number;
+  count: number;
+  records: DataPoint[];
+
+  // generated from GPT
+  name: string;
+};
+
+
+const classificationResults: ClassifiedClusterResponse[] =  [] /// see above - call Vector2Trend.classify
+
+console.log(classificationResults.map(x => ({ topic: x.name, score: x.score })))
+
+```
+
+Would look something like this:
+![demo output](./docs/screenshots//demo-output.png)
+
+
+### Debugging / Logging
 
 If something is going wrong with classification you can toggle on debug logging
 
 ```typescript
 Vector2Trend.enableLogging();
 ```
+
+## Developing
+
+I will take PRs, just please make sure to add tests where you change functionality.
+
+Jest tests are configured. 
+
+```
+npm run test
+```
+
+### Demo script
+
+You can run the demo script locally, just change the openAI Api key.
+```
+npm run demo
+```
+
+The demo output should look like this:
+![demo output](./docs/screenshots//demo-output.png)
+
+## Your feedback
+
+I am looking for you feedback to see what this could evolve into! Some things I have considered:
+
+- adding in features to do initial vectorization
+- graphical output features
+- many more ways to tweak and use the clustering algorithm.
+- more & better tests
