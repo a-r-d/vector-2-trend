@@ -148,7 +148,7 @@ The demo output should look like this:
 
 ## Your feedback
 
-I am looking for you feedback to see what this could evolve into! Some things I have considered:
+I am looking for your feedback to see what this could evolve into! Some things I have considered:
 
 - adding in features to do initial vectorization
 - graphical output features
